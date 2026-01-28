@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兄妹屠龍傳說</title>
+    <style>
+        :root {
+            --primary-boy: #4facfe;
+            --primary-girl: #ff9a9e;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --boss-hp-color: #ff4757;
+        }
+        body { font-family: '微軟正黑體', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; user-select: none; padding-bottom: 80px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* 頂部導航 */
+        .nav-bar { display: flex; justify-content: space-between; background: white; padding: 10px; border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
+        .nav-item { flex: 1; text-align: center; padding: 10px; border-radius: 25px; cursor: pointer; transition: 0.3s; font-weight: bold; color: #888; }
+        .nav-item.active-boy { background: var(--primary-boy); color: white; transform: scale(1.05); }
+        .nav-item.active-girl { background: var(--primary-girl); color: white; transform: scale(1.05); }
+        .nav-item.active-boss { background: #6c5ce7; color: white; transform: scale(1.05); }
+
+        /* 頁面切換 */
+        .page { display: none; animation: fadeIn 0.5s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 角色卡片 */
+        .profile-card { background: white; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .boy-theme .profile-card { border-top: 5px solid var(--primary-boy); }
+        .girl-theme .profile-card { border-top: 5px solid var(--primary-girl); }
+        
+        .avatar { font-size: 60px; display: inline-block; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        .milestone-box { background: #fff8e1; border: 2px dashed #ffc107; border-radius: 10px; padding: 10px; margin-top: 15px; font-size: 14px; color: #d35400; text-align: left; }
+        .milestone-icon { font-size: 20px; vertical-align: middle; margin-right: 5px; }
+
+        /* 進度條 */
+        .progress-container { background: #eee; height: 15px; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; transition: width 0.5s ease; }
+        .boy-theme .progress-bar { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+        .girl-theme .progress-bar { background: linear-gradient(90deg, #ff9a9e, #fecfef); }
+
+        /* 任務按鈕網格 */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; } /* 改成3列 */
+        
+        button { border: none; border-radius: 15px; padding: 10px 5px; cursor: pointer; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: #444; height: 100px; position: relative; overflow: hidden; }
+        button:active { transform: scale(0.95); }
+        
+        .emoji { font-size: 30px; display: block; margin-bottom: 5px; }
+        .task-name { font-size: 14px; font-weight: bold; display: block; line-height: 1.2; }
+        .points { font-size: 12px; font-weight: bold; margin-top: 5px; display: block; }
+        
+        .btn-task { border-bottom: 3px solid #81c784; }
+        .btn-task .points { color: #2e7d32; }
+        
+        .btn-reward { border-bottom: 3px solid #e57373; background: #fff5f5; }
+        .btn-reward .points { color: #c62828; }
+
+        /* ----------- BOSS 戰鬥區樣式 ----------- */
+        .boss-arena { text-align: center; background: url('https://www.transparenttextures.com/patterns/cubes.png'), linear-gradient(135deg, #1e1e2e 0%, #2d3436 100%); color: white; border-radius: 20px; padding: 30px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .boss-avatar { font-size: 100px; margin: 20px 0; display: inline-block; filter: drop-shadow(0 0 10px rgba(255,0,0,0.5)); transition: 0.1s; }
+        .boss-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; color: #ff7675; }
+        .boss-desc { font-size: 14px; color: #b2bec3; margin-bottom: 20px; }
+        
+        .hp-bar-container { width: 100%; height: 30px; background: #555; border-radius: 15px; overflow: hidden; border: 3px solid #444; position: relative; }
+        .hp-bar { height: 100%; background: linear-gradient(90deg, #ff4757, #ff6b81); width: 100%; transition: width 0.3s ease-out; }
+        .hp-text { position: absolute; width: 100%; text-align: center; top: 0; line-height: 28px; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 16px; }
+
+        .hit-effect { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+
+        /* 紀錄區 */
+        .log-area { margin-top: 20px; background: white; padding: 15px; border-radius: 15px; max-height: 200px; overflow-y: auto; font-size: 13px; color: #666; text-align: left; }
+        .log-item { padding: 8px 0; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between; }
+
+    </style>
+</head>
+<body class="boy-theme">
+
+<div class="container">
+    
+    <div class="nav-bar">
+        <div class="nav-item active-boy" onclick="switchPage('boy')">👦 哥哥</div>
+        <div class="nav-item" onclick="switchPage('girl')">👧 妹妹</div>
+        <div class="nav-item" onclick="switchPage('boss')">👹 討伐戰</div>
+    </div>
+
+    <div id="page-boy" class="page active">
+        </div>
+
+    <div id="page-girl" class="page">
+        </div>
+
+    <div id="page-boss" class="page">
+        <div class="boss-arena" id="boss-arena">
+            <div class="boss-name" id="boss-name">Loading...</div>
+            <div class="boss-desc" id="boss-desc">正在尋找怪物...</div>
+            <div class="boss-avatar" id="boss-avatar">👾</div>
+            
+            <div class="hp-bar-container">
+                <div class="hp-bar" id="boss-hp-bar"></div>
+                <div class="hp-text" id="boss-hp-text">100 / 100</div>
+            </div>
+            
+            <p style="margin-top:20px; color:#dfe6e9; font-size:14px;">
+                💡 提示：哥哥和妹妹只要完成任務獲得 XP，<br>就會自動對怪獸造成傷害喔！
+            </p>
+            <div style="margin-top:20px;" id="boss-log"></div>
+        </div>
+    </div>
+
+</div>
+
+<template id="player-template">
+    <div class="profile-card">
+        <div class="avatar">🦸</div>
+        <div><span class="level-badge">Lv.1</span></div>
+        <h2 style="margin:5px 0" class="player-score">0</h2>
+        <div class="progress-container"><div class="progress-bar"></div></div>
+        
+        <div class="milestone-box">
+            <span class="milestone-icon">🎁</span>
+            <span class="next-reward">下個獎勵：看電視 10 分鐘 (100分)</span>
+        </div>
+    </div>
+
+    <h3 style="color:#555; margin-left:5px;">🛡️ 英雄任務 (攻擊怪獸！)</h3>
+    <div class="grid">
+        <button class="btn-task" onclick="handleTask(5, '準時刷牙')"><span class="emoji">🪥</span><span class="task-name">刷牙</span><span class="points">+5 XP</span></button>
+        <button class="btn-task" onclick="handleTask(5, '喝水')"><span class="emoji">💧</span><span class="task-name">喝水</span><span class="points">+5 XP</span></button>
+        <button class="btn-task" onclick="handleTask(10, '吃青菜')"><span class="emoji">🥦</span><span class="task-name">吃青菜</span><span class="points">+10 XP</span></button>
+        <button class="btn-task" onclick="handleTask(15, '閱讀')"><span class="emoji">📖</span><span class="task-name">看書</span><span class="points">+15 XP</span></button>
+        <button class="btn-task" onclick="handleTask(10, '完成功課')"><span class="emoji">✍️</span><span class="task-name">寫功課</span><span class="points">+10 XP</span></button>
+        <button class="btn-task" onclick="handleTask(5, '整理書包')"><span class="emoji">🎒</span><span class="task-name">整理書包</span><span class="points">+5 XP</span></button>
+        <button class="btn-task" onclick="handleTask(20, '做家事')"><span class="emoji">🧹</span><span class="task-name">做家事</span><span class="points">+20 XP</span></button>
+        <button class="btn-task" onclick="handleTask(5, '準時睡覺')"><span class="emoji">🌙</span><span class="task-name">準時睡覺</span><span class="points">+5 XP</span></button>
+        <button class="btn-task" onclick="promptTask()"><span class="emoji">✨</span><span class="task-name">其他好事</span><span class="points">+? XP</span></button>
+    </div>
+
+    <h3 style="color:#555; margin-left:5px;">💎 獎勵兌換</h3>
+    <div class="grid">
+        <button class="btn-reward" onclick="handleTask(-50, '看影片')"><span class="emoji">📺</span><span class="task-name">看影片</span><span class="points">-50 分</span></button>
+        <button class="btn-reward" onclick="handleTask(-30, '吃點心')"><span class="emoji">🍪</span><span class="task-name">吃點心</span><span class="points">-30 分</span></button>
+        <button class="btn-reward" onclick="handleTask(-100, '買玩具')"><span class="emoji">🤖</span><span class="task-name">買小玩具</span><span class="points">-100 分</span></button>
+    </div>
+
+    <div class="log-area"></div>
+</template>
+
+<script>
+    // --- 遊戲資料設定 ---
+    let currentPlayer = 'boy'; // 'boy' or 'girl'
+    
+    // 里程碑設定 (可自行修改)
+    const milestones = [
+        { score: 100, reward: "看電視 10 分鐘" },
+        { score: 300, reward: "去公園玩 / 選一個點心" },
+        { score: 500, reward: "獲得一張願望卡" },
+        { score: 1000, reward: "去遊樂園 / 買大玩具" }
+    ];
+
+    // 怪獸列表
+    const monsters = [
+        { name: "懶惰史萊姆", hp: 100, maxHp: 100, avatar: "🦠", desc: "最喜歡讓人不想動的黏黏怪" },
+        { name: "壞脾氣哥布林", hp: 300, maxHp: 300, avatar: "👺", desc: "生氣的時候會變大隻喔！" },
+        { name: "拖延大魔王", hp: 500, maxHp: 500, avatar: "🐉", desc: "會讓你說「等一下」的可怕魔王" },
+        { name: "髒亂怪獸", hp: 800, maxHp: 800, avatar: "🧟", desc: "不愛乾淨的小孩會被他抓走" },
+        { name: "終極大魔神", hp: 2000, maxHp: 2000, avatar: "👿", desc: "只有傳說中的兄妹聯手才能打敗他" }
+    ];
+
+    // 初始資料
+    const defaultData = {
+        boy: { name: '哥哥', score: 0, logs: [] },
+        girl: { name: '妹妹', score: 0, logs: [] },
+        boss: { level: 0, currentHp: 100 } // 預設第一隻
+    };
+
+    let gameData = JSON.parse(localStorage.getItem('heroV3Data')) || defaultData;
+
+    // --- 初始化 ---
+    initUI();
+    renderBoss();
+
+    function initUI() {
+        renderPlayerPage('boy');
+        renderPlayerPage('girl');
+    }
+
+    function switchPage(pageName) {
+        // 更新 Tab 樣式
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.remove('active-boy', 'active-girl', 'active-boss');
+        });
+        
+        let activeClass = '';
+        if(pageName === 'boy') activeClass = 'active-boy';
+        if(pageName === 'girl') activeClass = 'active-girl';
+        if(pageName === 'boss') activeClass = 'active-boss';
+        
+        // 找出被點擊的按鈕並加上樣式
+        const tabs = document.querySelectorAll('.nav-item');
+        if(pageName === 'boy') tabs[0].classList.add(activeClass);
+        if(pageName === 'girl') tabs[1].classList.add(activeClass);
+        if(pageName === 'boss') tabs[2].classList.add(activeClass);
+
+        // 更新頁面顯示
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        document.getElementById(`page-${pageName}`).classList.add('active');
+
+        // 設定當前玩家
+        if(pageName !== 'boss') {
+            currentPlayer = pageName;
+            document.body.className = `${pageName}-theme`;
+        }
+    }
+
+    function renderPlayerPage(who) {
+        const p = gameData[who];
+        const container = document.getElementById(`page-${who}`);
+        container.innerHTML = ''; // 清空
+
+        // 複製模板
+        const template = document.getElementById('player-template');
+        const clone = template.content.cloneNode(true);
+
+        // 填入資料
+        clone.querySelector('.avatar').innerText = who === 'boy' ? '🦸‍♂️' : '🧚‍♀️';
+        clone.querySelector('.player-score').innerText = p.score;
+        
+        // 計算等級與里程碑
+        const nextMilestone = milestones.find(m => m.score > p.score) || { score: 9999, reward: "成為傳說！" };
+        clone.querySelector('.next-reward').innerText = `下個獎勵：${nextMilestone.reward} (還差 ${nextMilestone.score - p.score} 分)`;
+        
+        // 進度條 (每100分一循環)
+        clone.querySelector('.progress-bar').style.width = `${(p.score % 100)}%`;
+
+        // 綁定按鈕事件 (因為 cloneNode 會失去 onclick 綁定，需重新包裝)
+        // 為了簡單，直接在 HTML 使用全域 function，這裡只需渲染 log
+        
+        const logArea = clone.querySelector('.log-area');
+        logArea.innerHTML = p.logs.map(l => 
+            `<div class="log-item"><span>${l.reason}</span><span>${l.points>0?'+':''}${l.points}</span></div>`
+        ).join('');
+
+        container.appendChild(clone);
+    }
+
+    // --- 核心邏輯 ---
+
+    window.handleTask = function(points, reason) {
+        const p = gameData[currentPlayer];
+        
+        // 扣分檢查
+        if (points < 0 && p.score + points < 0) {
+            alert("金幣不夠喔！不能兌換！");
+            return;
+        }
+
+        // 更新分數
+        p.score += points;
+        
+        // 紀錄
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        p.logs.unshift({ time, reason, points });
+        if(p.logs.length > 20) p.logs.pop();
+
+        // ** 打怪邏輯 **
+        let bossMsg = "";
+        if (points > 0) {
+            const isDead = damageBoss(points);
+            if (isDead) bossMsg = "\n👾 怪獸被你們打敗了！新的怪獸出現了！";
+            else bossMsg = "\n⚔️ 給予怪獸傷害！";
+        }
+
+        saveData();
+        renderPlayerPage(currentPlayer); // 重新渲染當前頁面
+        renderBoss(); // 更新怪獸狀態
+        
+        // 簡單回饋
+        // if(points > 0) alert(`太棒了！${reason} 成功！${bossMsg}`);
+    }
+
+    window.promptTask = function() {
+        const reason = prompt("做了什麼好事情呢？(例如：幫忙拿碗筷)", "幫忙做家事");
+        if (reason) {
+            handleTask(10, reason); // 預設加10分
+        }
+    }
+
+    function damageBoss(dmg) {
+        const boss = gameData.boss;
+        const currentMonster = monsters[boss.level] || monsters[monsters.length-1];
+        
+        boss.currentHp -= dmg;
+        
+        // 動畫特效
+        const avatar = document.getElementById('boss-avatar');
+        if(avatar) {
+            avatar.classList.remove('hit-effect');
+            void avatar.offsetWidth; // trigger reflow
+            avatar.classList.add('hit-effect');
+        }
+
+        // 怪獸死亡
+        if (boss.currentHp <= 0) {
+            boss.level++;
+            if (boss.level >= monsters.length) boss.level = 0; // 輪迴或停在最後
+            // 重置血量
+            boss.currentHp = monsters[boss.level].maxHp;
+            return true; // 怪獸死了
+        }
+        return false;
+    }
+
+    function renderBoss() {
+        const bossIdx = gameData.boss.level >= monsters.length ? monsters.length - 1 : gameData.boss.level;
+        const monster = monsters[bossIdx];
+        const currentHp = gameData.boss.currentHp;
+
+        document.getElementById('boss-name').innerText = monster.name;
+        document.getElementById('boss-desc').innerText = monster.desc;
+        document.getElementById('boss-avatar').innerText = monster.avatar;
+        
+        const hpPercent = Math.max(0, (currentHp / monster.maxHp) * 100);
+        document.getElementById('boss-hp-bar').style.width = `${hpPercent}%`;
+        document.getElementById('boss-hp-text').innerText = `${currentHp} / ${monster.maxHp}`;
+    }
+
+    function saveData() {
+        localStorage.setItem('heroV3Data', JSON.stringify(gameData));
+    }
+
+    // 自動切換到當前頁面
+    switchPage('boy'); 
+
+</script>
+
+</body>
+</html>
